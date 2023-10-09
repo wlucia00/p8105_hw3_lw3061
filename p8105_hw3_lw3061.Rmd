@@ -1,0 +1,11 @@
+---
+title: "P8105 HW3"
+author: "Lucia Wang (lw3061)"
+due date: "2023-10-14"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
