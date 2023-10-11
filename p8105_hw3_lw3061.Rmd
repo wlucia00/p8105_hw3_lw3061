@@ -6,9 +6,18 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(p8105.datasets)
+knitr::opts_chunk$set(echo = TRUE)
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+
 ```
 
 ## Problem 1
@@ -25,6 +34,7 @@ brfss = brfss_smart2010 |>
     response = factor(response, levels=c("Poor", "Fair", "Good", "Very good", "Excellent"))
   )
 ```
+
 *1. In 2002, which states were observed at 7 or more locations? What about in 2010?*
 ```{r}
 states_02 = brfss |>
@@ -36,6 +46,7 @@ states_02 = brfss |>
   mutate(counties_per_state = n_obs/5)
 
 ```
+
 There were `r nrow(filter(states_02, counties_per_state >= 7))` states observed at 7 or more locations. They were `r pull(filter(states_02, counties_per_state >= 7),locationabbr)`.
 
 ```{r}
@@ -47,6 +58,7 @@ states_10 = brfss |>
   summarize(n_obs = n()) |>
   mutate(counties_per_state = n_obs/5)
 ```
+
 There were `r nrow(filter(states_10, counties_per_state >= 7))` states observed at 7 or more locations. They were `r pull(filter(states_10, counties_per_state >= 7),locationabbr)`
 
 *2. Filter to only `Excellent` responses and make a spaghetti plot with a newly calculated average value variable.*
@@ -64,6 +76,7 @@ excellent_plot = excellent |>
 
 excellent_plot
 ```
+
 The average data value has fluctuated over the years, with a very general trend of decreasing between 2002 and 2010. Most fall in the range between 17.5 to 27.5, but a few outlier states have average values closer to 10 or 30. 
 
 *3. Two-panel plot for `data_value` distribution in NY for 2006 vs 2010.*
@@ -81,6 +94,7 @@ ny_plot = ny_state |>
 
 ny_plot
 ```
+
 The highest `data_value` values were for the responses of `Very good` and `Good`. The scores tended to increase between 2006 and 2010 and the ranges of scores per response category also widened. 
 
 
@@ -111,6 +125,7 @@ accelerometer = read_csv("nhanes_accel.csv") |>
 
 demo_accel = left_join(demographics, accelerometer, by="seqn")
 ```
+
 The full dataset of demographic variables and accelerometer data has `r nrow(demo_accel)` observations.
 
 *2. Produce a table for sex vs education and make a visualization of the age distributions for each education category.*
@@ -121,14 +136,16 @@ education = demo_accel |>
 
 education |> knitr::kable()
 ```
+
 For both females and males, the number of observations is greatest in the "more than high school" education category. There are also more males overall. 
 
 ```{r}
 demo_accel |>
-  ggplot(aes(x=age)) +
+  ggplot(aes(x=age, fill=sex)) +
   geom_histogram(bins=10) +
   facet_wrap(sex~education)
 ```
+
 The age distributions for less than high school and high school equivalent look similar across sex. 
 
 Females who had more than high school education were younger on average as shown by the skewed right age distribution. While males were also younger on average in the more than high school education category, there seems to be more of a bi-modal distribution as most males were either below 50 years or above 60 years old.
@@ -146,6 +163,7 @@ demo_accel |>
   geom_smooth(se=FALSE) +
   facet_wrap(.~education)
 ```
+
 For all education categories, total activity decreased with age. 
 
 In the less than high school category, males on average had more activity than females, surprisingly more at older ages. There was also a wider range of total activity for this education group.
@@ -154,6 +172,46 @@ At higher levels of education, females had more total activity than males. High 
 
 For people with more than high school education, there was less activity overall, and males and females were more similar to each other. However, the trend lines for this education category did not really capture the almost "random"-looking dispersion of age and activity distribution. 
 
-*4. Make a plot for the 24-hour activity time by education level and use color to indicate sex.*
+*4. Make a 3-panel plot for the 24-hour activity time by education level and use color to indicate sex.*
+```{r}
+activity24 = demo_accel |>
+  pivot_longer(
+    min1:min1440,
+    names_to = "min",
+    values_to = "activity"
+  ) |>
+  separate(min, into=c("minname", "minnum"), sep=3) |>
+  mutate(
+  minnum = as.numeric(minnum)
+  ) 
+
+activity24 |>
+  ggplot(aes(x=minnum, y=activity, color=sex)) + 
+  geom_point(alpha=0.25, size=0.1) +
+  geom_smooth() +
+  facet_wrap(.~education) +
+  labs(
+    x = "Hour of day", y="Activity", title ="Activity over 24 hours by sex and education category"
+  )
+```
+
+Most participants had activity levels between 0-2000 when looking at their activity data by hour. 
+
+As expected, the most activity occurred during the daywith a dip in the early hours of the day. The peaks of all 3 panels was around midday
+
+Females tended to have more activity than males when looking at trend lines. 
+
+Education did not seem to have an effect on amounts of activity in general, but when the data is filtered to people with `activity` < 50 per minute, those in the less than high school category trended with slightly more activity than the other two education categories. 
+```{r}
+activity24 |>
+  filter(activity < 50) |>
+  ggplot(aes(x=minnum, y=activity, color=sex)) + 
+  geom_point(alpha=0.25) +
+  geom_smooth() +
+  facet_wrap(.~education) +
+  labs(
+    x = "Hour of day", y="Activity", title ="Activity over 24 hours, with values <2000 excluded"
+  )
+```
 
 
