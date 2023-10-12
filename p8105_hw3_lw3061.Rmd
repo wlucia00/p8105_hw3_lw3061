@@ -20,7 +20,60 @@ scale_fill_discrete = scale_fill_viridis_d
 
 ```
 
-## Problem 1
+## Problem 1 = Instacart
+```{r}
+data("instacart")
+```
+
+```{r, include=FALSE}
+# data exploration
+nrow(instacart)
+
+instacart |> 
+  group_by(aisle) |> 
+  summarize(n_aisles = n()) |> 
+  nrow()
+
+instacart_sort = instacart |>
+  group_by(aisle) |>
+  summarize(n_aisles = n()) |>
+  mutate(
+    rank_aisles = rank(n_aisles)
+  ) |> 
+  arrange(rank_aisles)
+
+instacart_aisles = instacart |>
+  group_by(aisle) |> 
+  summarize(n_aisles = n()) |>
+  filter(n_aisles > 10000) |>
+  mutate(
+    rank_aisles = rank(n_aisles)
+  ) |>
+  arrange(rank_aisles)
+
+```
+This dataset shows grocery store items including the aisle number and what product it is. It has information on if people added it to the cart or reordered it, as well as what time of day it was ordered.
+
+1. # of aisles and aisles with most items ordered
+
+There are `r nrow(instacart)` items in the data, across `r nrow(summarize(group_by(instacart, aisle), n_aisles=n()))` aisles. The top 20 aisles from which the most items are ordered is `r select(filter(instacart_sort, rank_aisles <= 20), aisle, rank_aisles)`. 
+
+2. Plot with # of items ordered per aisle, only for aisles > 10000 items ordered.
+
+```{r}
+instacart_aisles |>
+  ggplot(aes(x=rank_aisles, y=n_aisles, color=aisle)) +
+  geom_point() +
+  labs(
+    x="Rank of aisle from most to least items ordered",
+    y="Number of items"
+  ) +
+  theme(legend.position="none") +
+  geom_text(aes(label=aisle), size=1, hjust=1, vjust=1, angle=90)
+```
+
+
+
 
 ## Problem 2 = BRFSS
 First, clean and format the data.
