@@ -23,6 +23,10 @@ scale_fill_discrete = scale_fill_viridis_d
 ## Problem 1 = Instacart
 ```{r}
 data("instacart")
+
+instacart = 
+  instacart |> 
+  as_tibble()
 ```
 
 ```{r, include=FALSE}
@@ -38,7 +42,7 @@ instacart_sort = instacart |>
   group_by(aisle) |>
   summarize(n_aisles = n()) |>
   mutate(
-    rank_aisles = rank(n_aisles)
+    rank_aisles = rank(desc(n_aisles))
   ) |> 
   arrange(rank_aisles)
 
@@ -47,33 +51,50 @@ instacart_aisles = instacart |>
   summarize(n_aisles = n()) |>
   filter(n_aisles > 10000) |>
   mutate(
-    rank_aisles = rank(n_aisles)
+    rank_aisles = rank(desc(n_aisles))
   ) |>
-  arrange(rank_aisles)
+  arrange(rank_aisles, aisle)
 
 ```
-This dataset shows grocery store items including the aisle number and what product it is. It has information on if people added it to the cart or reordered it, as well as what time of day it was ordered.
 
-1. # of aisles and aisles with most items ordered
-
-There are `r nrow(instacart)` items in the data, across `r nrow(summarize(group_by(instacart, aisle), n_aisles=n()))` aisles. The top 20 aisles from which the most items are ordered is `r select(filter(instacart_sort, rank_aisles <= 20), aisle, rank_aisles)`. 
+In total, there are `r instacart |> select(product_id) |> distinct() |> count()` products found in `r instacart |> select(user_id, order_id) |> distinct() |> count()` orders from `r instacart |> select(user_id) |> distinct() |> count()` distinct users.
 
 2. Plot with # of items ordered per aisle, only for aisles > 10000 items ordered.
 
 ```{r}
-instacart_aisles |>
-  ggplot(aes(x=rank_aisles, y=n_aisles, color=aisle)) +
-  geom_point() +
-  labs(
-    x="Rank of aisle from most to least items ordered",
-    y="Number of items"
-  ) +
-  theme(legend.position="none") +
-  geom_text(aes(label=aisle), size=1, hjust=1, vjust=1, angle=90)
+instacart |> 
+  count(aisle) |> 
+  filter(n > 10000) |> 
+  mutate(aisle = fct_reorder(aisle, n)) |> 
+  ggplot(aes(x = aisle, y = n, color=aisle)) + 
+  geom_point() + 
+  labs(title = "Number of items ordered in each aisle") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position = 'none')
 ```
 
+3. table with 3 most popular items in baking ingredients, dog food care, and packaged vegetables fruits. 
+```{r}
+instacart |> 
+  filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) |>
+  group_by(aisle) |> 
+  count(product_name) |> 
+  mutate(rank = min_rank(desc(n))) |> 
+  filter(rank < 4) |> 
+  arrange(desc(n)) |>
+  knitr::kable()
+```
 
-
+4. mean hour of day when Pink Lady Apples and Coffee Ice Cream are ordered for each day of the week.
+```{r}
+instacart |>
+  filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) |>
+  group_by(product_name, order_dow) |>
+  summarize(mean_hour = mean(order_hour_of_day)) |>
+  pivot_wider(
+    names_from = order_dow, 
+    values_from = mean_hour) |>
+  knitr::kable(digits = 2)
+```
 
 ## Problem 2 = BRFSS
 First, clean and format the data.
